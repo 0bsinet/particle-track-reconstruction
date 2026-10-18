@@ -1,9 +1,13 @@
 # External Pythia source tree
-/pythia8318/
+/pythia/pythia8318/
 
 # Environments
 venv/
 .venv/
+
+# Generated simulation data
+toy_particles.csv
+*.root
 
 # External downloads
 *.tgz
