@@ -12,9 +12,9 @@ At what pileup densities does an Extended Kalman Filter (EKF)-based tracker begi
 
 ## Structure
  - C++ — simulation and algorithm implementation
- - PYTHIA - particle collisione event generation
- - Geant4 - planned detector simulation
- - ACTS - planned track reconstruction framework
- - Python - reconstruction efficiency analysis
- - Git & Github - version control and project documentation
- - WSL/Ubuntu - development environment
+ - PYTHIA — particle collisione event generation
+ - Geant4 — planned detector simulation
+ - ACTS — planned track reconstruction framework
+ - Python — reconstruction efficiency analysis
+ - Git & Github — version control and project documentation
+ - WSL/Ubuntu — development environment
