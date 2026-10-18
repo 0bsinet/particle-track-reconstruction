@@ -1,0 +1,76 @@
+<html><head><title>main300-python</title>
+<link rel="stylesheet" type="text/css" href="../pythia.css"/>
+<link rel="shortcut icon" href="../pythia32.gif"/></head><body><h2>main300-python</h2>
+Back to <a href="../ExampleKeywords.html" target="page">index.</a>
+<pre><code class="language-python">
+# main300.py is a part of the PYTHIA event generator.
+# Copyright (C) 2026 Philip Ilten and Torbjorn Sjostrand.
+# PYTHIA is licenced under the GNU GPL v2 or later, see COPYING for details.
+# Please respect the MCnet Guidelines, see GUIDELINES for details.
+
+# Authors:
+#            <a href="mailto:philten@cern.ch">Philip Ilten</a>
+
+# Keywords:
+#            <a href="../ExampleKeywords.html#python">Python</a>
+#            <a href="../ExampleKeywords.html#visualization">Visualization</a>
+
+# Example of how to use VISTAS to visualize a Pythia event.
+
+# To set the path to the Pythia 8 Python interface do either
+# (in a shell prompt):
+#      export PYTHONPATH=$(PREFIX_LIB):$PYTHONPATH
+# or the following which sets the path from within Python.
+import sys
+cfg = open(&quot;../Makefile.inc&quot;)
+lib = &quot;../lib&quot;
+for line in cfg:
+    if line.startswith(&quot;PREFIX_LIB=&quot;): lib = line[11:-1]; break
+sys.path.insert(0, lib)
+
+# Import Pythia.
+import pythia8
+
+# Create the Pythia object.
+pythia = pythia8.Pythia(&quot;&quot;, False)
+pythia.readString(&quot;Print:quiet = on&quot;)
+
+# Set beams to proton (2212) and proton (2212).
+pythia.readString(&quot;Beams:idA = 2212&quot;)
+pythia.readString(&quot;Beams:idB = 2212&quot;)
+
+# Set asymmetric beam energies (in GeV).
+pythia.readString(&quot;Beams:frameType = 2&quot;)
+pythia.readString(&quot;Beams:eA = 6500&quot;)
+pythia.readString(&quot;Beams:eB = 6500&quot;)
+
+# Enable top pair production.
+pythia.readString(&quot;Top:gg2ttbar = on&quot;)
+
+# Initialize Pythia and generate an event.
+pythia.init()
+pythia.next()
+
+# Visualize the event.
+viewer = pythia8.Vistas(pythia)
+viewer.display()
+
+# Only show the hard process and MPI.
+viewer.opts[&quot;show&quot;] = [&quot;hard process&quot;, &quot;MPI&quot;]
+viewer.display()
+
+# Reset the options.
+viewer.opts = viewer.options()
+
+# Turn on anti-kT jets.
+viewer.opts[&quot;jets&quot;][&quot;algorithm&quot;] = &quot;akt&quot;
+viewer.display()
+
+# Reset the options.
+viewer.opts = viewer.options()
+
+# Change length to be proportional to energy.
+viewer.opts[&quot;length&quot;][&quot;scale&quot;] = &quot;log&quot;
+viewer.opts[&quot;length&quot;][&quot;observable&quot;] = &quot;p.e()&quot;
+viewer.display()
+</code></pre></body></html>

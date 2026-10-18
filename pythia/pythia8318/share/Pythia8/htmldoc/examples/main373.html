@@ -1,0 +1,174 @@
+<html><head><title>main373</title>
+<link rel="stylesheet" type="text/css" href="../pythia.css"/>
+<link rel="shortcut icon" href="../pythia32.gif"/></head><body><h2>main373</h2>
+Back to <a href="../ExampleKeywords.html" target="page">index.</a>
+<pre><code class="language-c++">
+// main373.cc is a part of the PYTHIA event generator.
+// Copyright (C) 2026 Torbjorn Sjostrand.
+// PYTHIA is licenced under the GNU GPL v2 or later, see COPYING for details.
+// Please respect the MCnet Guidelines, see GUIDELINES for details.
+
+// Authors:
+//            <a href="mailto:torbjorn.sjostrand@fysik.lu.se">Torbjörn Sjöstrand</a>
+
+// Keywords:
+//            <a href="../ExampleKeywords.html#top">Top</a>
+//            <a href="../ExampleKeywords.html#toponium">Toponium</a>
+
+// Energy dependence of the total cross section in the threshold region
+// of e+e- -&gt; gamma*/Z0 -&gt; t tbar.
+
+// Special case for comparison with Fig. 1 of Hoang et al. review,
+// A. H. Hoang et al., &quot;Top - anti-top pair production close to threshold:
+// Synopsis of recent NNLO results,&quot; Eur. Phys. J. direct 2 (2000), no. 1, 3,
+// hep-ph/0001286,
+// but note that the definition of top mass is ambiguous.
+
+// Study five variations of the basic cross section calculations.
+// 0 = Born, 1 = Coulomb, 2 = narrow Green, 3 = narrow top, 4 = both wide.
+
+#include &quot;Pythia8/Pythia.h&quot;
+using namespace Pythia8;
+
+
+//==========================================================================
+
+int main() {
+
+  // Include initial-state QED radiation or not.
+  bool doQEDISR = true;
+
+  // Only allow gamma* exchange to be able to define classic R ratio.
+  bool gammaOnly = false;
+
+  // Special comparison with Hoang et al. (overrides two switches above).
+  bool compareHoang = false;
+
+  // Number of events per model and energy point.
+  // (More statistics needed for smooth behaviour, so this is start only.)
+  int nEvent = 1000;
+
+  // Scenarios. Common base parameters.
+  constexpr int nca = 5;
+  int topModelSel[nca] = { 0, 1, 3, 3, 2};
+  double gammatGr[nca] = { 0.001, 0.001, 0.02, 1.32, 1.34};
+  double mt              = 172.5;
+  double gammat          = 1.34;
+  double thresholdRegion = 10.;
+  int    alphasOrder     = 2;
+  double alphasValue     = 0.118;
+
+   // Histogram and its range.
+  Hist sigmaE[nca], ratioE[nca];
+  int nEcm    = 100;
+  double eMin = 340.;
+  double eMax = 350.;
+
+  // Overwrite as relevant for comparison with Hoang et al.
+  if (compareHoang) {
+    doQEDISR    = false;
+    gammaOnly   = true;
+    mt          = 175.05;
+    gammat      = 1.43;
+    gammatGr[3] = 1.41;
+    gammatGr[4] = 1.43;
+    nEcm        = 80;
+    eMin        = 344.;
+    eMax        = 352.;
+  }
+
+  // Loop over various mass smearing options.
+  for (int ica = 0; ica &lt; nca; ++ica) {
+    int    topModel    = topModelSel[ica];
+    double gammatGreen = gammatGr[ica];
+
+    // Book histograms.
+    sigmaE[ica].book( &quot;sigma(energy)&quot;, nEcm, eMin, eMax);
+    ratioE[ica].book( &quot;R(energy)&quot;, nEcm, eMin, eMax);
+
+    // Loop over collision energies.
+    for (int iEcm = 0; iEcm &lt; nEcm; ++iEcm) {
+      double eCM = eMin + (iEcm + 0.5) * (eMax - eMin) / nEcm;
+
+      // Create generator without showing header.
+      Pythia pythia(&quot;../share/Pythia8/xmldoc&quot;, false);
+
+      // Process and kinematics setup.
+      pythia.readString(&quot;Top:ffbar2ttbar(s:gmZ) = on&quot;);
+      if (gammaOnly) pythia.readString(&quot;WeakZ0:gmZmode = 1&quot;);
+      pythia.readString(&quot;Beams:idA = -11&quot;);
+      pythia.readString(&quot;Beams:idB = 11&quot;);
+      pythia.settings.parm(&quot;Beams:eCM&quot;, eCM);
+      pythia.readString(&quot;PhaseSpace:mHatMin = 300.&quot;);
+
+      // Feed in desired values.
+      pythia.settings.mode(&quot;TopThreshold:model&quot;, topModel);
+      pythia.particleData.m0(6, mt);
+      pythia.readString(&quot;6:doForceWidth = true&quot;);
+      pythia.particleData.mWidth( 6, gammat);
+      pythia.settings.parm(&quot;TopThreshold:tWidthGreen&quot;, gammatGreen);
+      pythia.settings.parm(&quot;TopThreshold:thrRegion&quot;, thresholdRegion);
+      pythia.settings.mode(&quot;TopThreshold:alphasOrder&quot;, alphasOrder);
+      pythia.settings.parm(&quot;TopThreshold:alphasValue&quot;, alphasValue);
+
+      // Switch off (most) code parts not relevant here.
+      pythia.readString(&quot;PartonLevel:ISR = off&quot;);
+      pythia.readString(&quot;PartonLevel:FSR = off&quot;);
+      pythia.readString(&quot;PartonLevel:MPI = off&quot;);
+      pythia.readString(&quot;HadronLevel:all = off&quot;);
+      if (!doQEDISR) pythia.readString(&quot;PDF:lepton = off&quot;);
+
+      // Reduce printout.
+      pythia.readString(&quot;Init:showProcesses = off&quot;);
+      pythia.readString(&quot;Init:showChangedSettings = off&quot;);
+      pythia.readString(&quot;Init:showChangedParticleData = off&quot;);
+      pythia.readString(&quot;Next:numberCount = 1000000&quot;);
+      pythia.readString(&quot;Next:numberShowInfo = 0&quot;);
+      pythia.readString(&quot;Next:numberShowProcess = 0&quot;);
+      pythia.readString(&quot;Next:numberShowEvent = 0&quot;);
+
+      // Loop to next energy if Pythia fails to initialize.
+      if (!pythia.init()) continue;
+
+      // Event loop. Generate events.
+      for (int iEvent = 0; iEvent &lt; nEvent; ++iEvent)
+        if (!pythia.next()) continue;
+
+      // Histogram cross section at given energy.
+      double sigmaGen = 1e9 * pythia.info.sigmaGen();
+      sigmaE[ica].fill( eCM, sigmaGen);
+
+      // Normalize to the pointlike QED cross section.
+      // Note: the sigma and R curves seem almost identical, but have
+      // different dimensions: by coincidence the point cross section
+      // times the squared top charge is surprisingly close to 1 pb.
+      double sigmaPoint = GEVSQINV2MB * 4. * M_PI * pow2(pythia.info.alphaEM())
+        / (3. * pow2(eCM));
+      double sigmaNorm = pythia.info.sigmaGen() / sigmaPoint;
+      ratioE[ica].fill( eCM, sigmaNorm);
+
+    // End of energy and options loops.
+    }
+  }
+
+  // Plot histograms.
+  string linest[nca] = {
+    &quot;-,blue&quot;, &quot;--,red&quot;, &quot;-,black&quot;, &quot;--,magenta&quot;, &quot;-.,olive&quot;};
+  string captst[nca] = {
+    &quot;Born&quot;, &quot;Coulomb&quot;, &quot;narrow Green&quot;, &quot;narrow top&quot;, &quot;both broad&quot;};
+  HistPlot hpl(&quot;plot373&quot;);
+  hpl.frame(&quot;fig373&quot;, &quot;&quot;, &quot;$E_{\\mathrm{CM}}$ (GeV)&quot;,
+    &quot;$\\sigma(E_{\\mathrm{CM}})$ (pb)&quot;, 6.4, 4.8);
+  for (int ica = 0; ica &lt; nca; ++ica)
+    hpl.add( sigmaE[ica], linest[ica], captst[ica]);
+  hpl.plot();
+  hpl.frame(&quot;&quot;, &quot;&quot;, &quot;$E_{\\mathrm{CM}}$ (GeV)&quot;,
+    &quot;$R(E_{\\mathrm{CM}})$&quot;, 6.4, 4.8);
+  for (int ica = 0; ica &lt; nca; ++ica)
+    hpl.add( ratioE[ica], linest[ica], captst[ica]);
+  hpl.plot();
+
+  // Done.
+  return 0;
+}
+</code></pre></body></html>

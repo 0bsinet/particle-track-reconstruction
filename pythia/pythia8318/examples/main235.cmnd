@@ -1,0 +1,27 @@
+! Process setup.
+Beams:eCM           = 13600.
+HardQCD:all         = on
+PhaseSpace:pTHatMin = 20.
+
+! Optionally POWHEG hooks. This will auto-load the required plugin.
+! POWHEG:veto = 1
+
+! Optionally jet matching. This will auto-load the required plugin.
+! JetMatching:merge = on
+
+! Optionally LHEF writer.
+! Can also be loaded with the command-line argument -L main235.lhef
+! Init:plugins += {libpythia8lhefHooks.so::LHEFHooks}
+! LHEF:fileName = main235.lhef
+
+! Optionally HepMC writer.
+! Can also be loaded with the command-line argument -H main235.hepmc
+! Init:plugins += {libpythia8hepmc3.so::HepMC3Hooks}
+! HepMC:fileName = main235.hepmc
+
+! Optionally Rivet.
+! Can also be loaded with the command-line arguments
+! -R main235.yoda and -A {MC_XSEC,MC_WEIGHTS}
+! Init:plugins += {libpythia8rivet.so::RivetHooks}
+! Rivet:fileName = main235.yoda
+! Rivet:analyses = {MC_XSEC,MC_WEIGHTS}

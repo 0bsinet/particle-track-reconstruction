@@ -1,0 +1,147 @@
+<html><head><title>main428</title>
+<link rel="stylesheet" type="text/css" href="../pythia.css"/>
+<link rel="shortcut icon" href="../pythia32.gif"/></head><body><h2>main428</h2>
+Back to <a href="../ExampleKeywords.html" target="page">index.</a>
+<pre><code class="language-c++">
+// main428.cc is a part of the PYTHIA event generator.
+// Copyright (C) 2026 Torbjorn Sjostrand.
+// PYTHIA is licenced under the GNU GPL v2 or later, see COPYING for details.
+// Please respect the MCnet Guidelines, see GUIDELINES for details.
+
+// Authors:
+//            <a href="mailto:christian.bierlich@fysik.lu.se">Christian Bierlich</a>
+
+// Keywords:
+//            <a href="../ExampleKeywords.html#heavy+ions">Heavy&nbsp;ions</a>
+//            <a href="../ExampleKeywords.html#nuclear+geometry">Nuclear&nbsp;geometry</a>
+//            <a href="../ExampleKeywords.html#validation">Validation</a>
+
+// Closure tests for the built-in nuclear geometry models. The tests compare
+// sampled one-body radial distributions with their analytic truth shapes.
+
+#include &quot;Pythia8/Pythia.h&quot;
+#include &quot;Pythia8/HINucleusModel.h&quot;
+
+using namespace Pythia8;
+
+//--------------------------------------------------------------------------
+
+bool initModel(NucleusModel&amp; model, Pythia&amp; pythia, int id) {
+  Info&amp; info = const_cast&lt;Info&amp;&gt;(pythia.info);
+  model.initPtr(id, true, info);
+  return model.init();
+}
+
+//--------------------------------------------------------------------------
+
+pair&lt;Hist, Hist&gt; runClosure(string name, function&lt;double()&gt; sampleRadius,
+  function&lt;double(double)&gt; truthShape, double rMax, int nBin, int nSample) {
+
+  Hist sampled(name, nBin, 0., rMax);
+  Hist truth(name, nBin, 0., rMax);
+
+  for (int iSample = 0; iSample &lt; nSample; ++iSample)
+    sampled.fill(sampleRadius());
+
+  for (int iBin = 1; iBin &lt;= truth.getBinNumber(); ++iBin) {
+    double rMid = truth.getBinCenter(iBin);
+    truth.fill(rMid, max(0., truthShape(rMid)));
+  }
+
+  truth.normalizeIntegral();
+  sampled.normalizeIntegral();
+  return make_pair(truth, sampled);
+}
+
+
+int main() {
+
+  // We need a Pythia object for reading settings and passing
+  // info pointer from.
+  Pythia pythia(&quot;&quot;, false);
+  // We don&apos;t need to initialize the full object, just the
+  // random number generator
+  pythia.rndm.init(31415);
+
+  // Common settings for all closures
+  pythia.readString(&quot;HeavyIonA:HardCore = off&quot;);
+  pythia.readString(&quot;HeavyIonB:HardCore = off&quot;);
+  pythia.readString(&quot;HeavyIonA:GaussHardCore = off&quot;);
+  pythia.readString(&quot;HeavyIonB:GaussHardCore = off&quot;);
+
+  int nSample = 100000;
+  int nBin = 80;
+
+  vector&lt;pair&lt;Hist, Hist&gt; &gt; results;
+
+  // Closure test for GLISSANDO, a selection of different nuclei
+  vector&lt;pair&lt;int, string&gt; &gt; glissandoNuclei = {{1000290630, &quot;63Cu&quot;},
+    {1000541290, &quot;129Xe&quot;}, {1000791970, &quot;197Au&quot;}, {1000822080, &quot;208Pb&quot;}};
+  for (auto n : glissandoNuclei) {
+    GLISSANDOModel g;
+    initModel(g, pythia, n.first);
+    results.push_back(runClosure(
+      &quot;GLISSANDO &quot;+n.second,
+      [&amp;](){ return g.generateNucleon().pAbs();},
+      [&amp;](double r) {
+        return r * r / (1. + exp((r - g.R()) / g.a())); },
+      g.R() + 20. * g.a(), nBin, nSample));
+  }
+
+  // Closure test for Harmonic Oscillator Shell, a selection of light nuclei.
+  vector&lt;pair&lt;int, string&gt; &gt; hoShellNuclei = {{1000020040, &quot;4He&quot;},
+    {1000030080, &quot;8Li&quot;}, {1000060120, &quot;12C&quot;}, {1000080160, &quot;16O&quot;}};
+  for (auto n : hoShellNuclei) {
+    HOShellModel h;
+    initModel(h, pythia, n.first);
+    results.push_back(runClosure(
+      &quot;HO shell &quot;+n.second,
+      [&amp;](){ return h.generateNucleon().pAbs();},
+      [&amp;](double r) {
+        return r * r * (1. + (h.A() - 4.) / 6. * r * r / h.C2())
+          * exp(-r * r / h.C2()); },
+      6.5 * sqrt(h.C2()), nBin, nSample));
+  }
+
+  // Closure test for Gaussian, two light nuclei.
+  vector&lt;pair&lt;int, string&gt; &gt; gaussianNuclei = {{1000020040, &quot;4He&quot;},
+    {1000080160, &quot;16O&quot;}};
+  for (auto n : gaussianNuclei) {
+    GaussianModel gaussian;
+    initModel(gaussian, pythia, n.first);
+    results.push_back(runClosure(
+      &quot;Gaussian &quot;+n.second,
+      [&amp;](){ return gaussian.generateNucleon().pAbs();},
+      [&amp;](double r) {
+        return exp(-0.5 * pow2(r / gaussian.chargeRadius())); },
+      5.5 * gaussian.chargeRadius(), nBin, nSample));
+  }
+
+  // Closure test for Hulthen, for deuterons.
+  HulthenModel hulthen;
+  initModel(hulthen, pythia, 1000010020);
+  results.push_back(runClosure(
+    &quot;Hulthen deuteron&quot;,
+    [&amp;](){
+      vector&lt;Nucleon&gt; nucleons = hulthen.generate();
+      return (nucleons[1].nPos() - nucleons[0].nPos()).pAbs();},
+    [&amp;](double r) {
+      return exp(-2. * hulthen.a() * r) + exp(-2. * hulthen.b() * r)
+        - 2. * exp(-(hulthen.a() + hulthen.b()) * r); },
+    12. / hulthen.a(), nBin, nSample));
+
+  // Write a matplotlib script for visual inspection of each closure.
+  HistPlot hpl(&quot;plot428&quot;);
+  for (int iResult = 0; iResult &lt; int(results.size()); ++iResult) {
+    hpl.frame(iResult == 0 ? &quot;fig428&quot; : &quot;&quot;,
+      results[iResult].first.getTitle() + &quot; radial closure&quot;,
+      &quot;$r$ (fm)&quot;, &quot;P(r)&quot;, 8.0, 5.4);
+    hpl.add(results[iResult].second, &quot;e,blue&quot;, &quot;sampled&quot;);
+    hpl.add(results[iResult].first, &quot;-,red&quot;, &quot;truth&quot;);
+    hpl.plot();
+  }
+
+  cout &lt;&lt; &quot;\n Plot script written to plot428.py.&quot; &lt;&lt; endl;
+  return 0;
+}
+</code></pre></body></html>

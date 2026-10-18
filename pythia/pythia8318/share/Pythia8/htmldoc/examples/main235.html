@@ -1,0 +1,216 @@
+<html><head><title>main235</title>
+<link rel="stylesheet" type="text/css" href="../pythia.css"/>
+<link rel="shortcut icon" href="../pythia32.gif"/></head><body><h2>main235</h2>
+Back to <a href="../ExampleKeywords.html" target="page">index.</a>
+<pre><code class="language-c++">
+// main235.cc is a part of the PYTHIA event generator.
+// Copyright (C) 2026 Torbjorn Sjostrand.
+// PYTHIA is licenced under the GNU GPL v2 or later, see COPYING for details.
+// Please respect the MCnet Guidelines, see GUIDELINES for details.
+
+// Authors:
+//            Christian T Preuss
+
+// Contact: Christian T. Preuss &lt;preuss@physik.rwth-aachen.de&gt;
+
+// Keywords:
+//            <a href="../ExampleKeywords.html#matching">Matching</a>
+//            <a href="../ExampleKeywords.html#merging">Merging</a>
+//            <a href="../ExampleKeywords.html#leading+order">Leading&nbsp;order</a>
+//            <a href="../ExampleKeywords.html#nlo">NLO</a>
+//            <a href="../ExampleKeywords.html#powheg">Powheg</a>
+//            <a href="../ExampleKeywords.html#madgraph">Madgraph</a>
+//            <a href="../ExampleKeywords.html#amc@nlo">aMC@NLO</a>
+//            <a href="../ExampleKeywords.html#ckkw-l">CKKW&#8209;L</a>
+//            <a href="../ExampleKeywords.html#umeps">UMEPS</a>
+//            <a href="../ExampleKeywords.html#nl3">NL3</a>
+//            <a href="../ExampleKeywords.html#unlops">UNLOPS</a>
+//            <a href="../ExampleKeywords.html#fxfx">FxFx</a>
+//            <a href="../ExampleKeywords.html#mlm">MLM</a>
+//            <a href="../ExampleKeywords.html#userhooks">Userhooks</a>
+//            <a href="../ExampleKeywords.html#lhe+file">LHE&nbsp;file</a>
+//            <a href="../ExampleKeywords.html#hdf5+file">HDF5&nbsp;file</a>
+//            <a href="../ExampleKeywords.html#lheh5">LHEH5</a>
+//            <a href="../ExampleKeywords.html#hepmc">Hepmc</a>
+//            <a href="../ExampleKeywords.html#rivet">Rivet</a>
+//            <a href="../ExampleKeywords.html#general+usage">General&nbsp;usage</a>
+
+// This example covers generic Pythia usage in an omnibus main program.
+
+#include &quot;Pythia8/Pythia.h&quot;
+#include &quot;Pythia8/PythiaParallel.h&quot;
+#include &quot;Pythia8Plugins/InputParser.h&quot;
+
+using namespace Pythia8;
+
+// Short-hand functions for checking if a plugin is loaded.
+bool load(Pythia&amp; pythia, string lib) {
+  return pythia.settings.registerPluginLibrary(lib);}
+bool load(PythiaParallel&amp; pythia, string lib) {
+  return pythia.settings.registerPluginLibrary(lib);}
+
+//==========================================================================
+
+// General example program for usage of PYTHIA.
+
+int main(int argc, char** argv){
+
+  // Set up command line options.
+  InputParser ip(&quot;General usage of PYTHIA.&quot;,
+    {&quot;./main235 [command-line arguments] [SETTINGS]&quot;});
+  ip.add(&quot;c&quot;, &quot;&quot;, &quot;Use this user-written command file.&quot;, {&quot;-cmnd&quot;});
+  ip.add(&quot;V&quot;, &quot;-1&quot;, &quot;Verbosity level for messages.&quot;, {&quot;-verbosity&quot;});
+  ip.add(&quot;n&quot;, &quot;-1&quot;, &quot;Generate this many events.&quot;, {&quot;-number-of-events&quot;});
+  ip.add(&quot;s&quot;, &quot;-1&quot;, &quot;Use this random-number seed.&quot;, {&quot;-seed&quot;});
+  ip.add(&quot;f&quot;, &quot;&quot;, &quot;Use this event file (LHEF, LHEH5).&quot;,
+    {&quot;-file&quot;, &quot;-event-file&quot;});
+  ip.add(&quot;t&quot;, &quot;0&quot;, &quot;Run on multiple threads.&quot;, {&quot;-threads&quot;});
+  ip.add(&quot;L&quot;, &quot;&quot;, &quot;Write LHEF 3 events to specified file.&quot;, {&quot;-lhef-output&quot;});
+  ip.add(&quot;H&quot;, &quot;&quot;, &quot;Write HepMC3 events to specified file.&quot;,
+    {&quot;-hepmc&quot;, &quot;-hepmc-output&quot;});
+  ip.add(&quot;A&quot;, &quot;&quot;, &quot;Run RIVET with the specified analyses.&quot;,
+    {&quot;-analyses&quot;, &quot;-rivet-analyses&quot;});
+  ip.add(&quot;R&quot;, &quot;&quot;, &quot;Write RIVET output to specified file.&quot;,
+    {&quot;-rivet&quot;, &quot;-rivet-output&quot;});
+  ip.add(&quot;P&quot;, &quot;&quot;,
+    &quot;Load specified list runtime plugins. Can also be used multiple times.&quot;,
+    {&quot;-plugin&quot;, &quot;-plugins&quot;});
+  ip.add(&quot;v&quot;, &quot;false&quot;, &quot;Print PYTHIA version number and exit.&quot;, {&quot;-version&quot;});
+
+  // Initialise the parser and exit if necessary.
+  InputParser::Status status = ip.init(argc, argv);
+  if (status != InputParser::Valid) return status;
+
+  // Print version number and exit.
+  if (ip.get&lt;bool&gt;(&quot;v&quot;)) {
+    cout &lt;&lt; &quot;PYTHIA version: &quot; &lt;&lt; PYTHIA_VERSION &lt;&lt; endl;
+    return 0;
+  }
+
+  // Input file.
+  string cmndFile = ip.get&lt;string&gt;(&quot;c&quot;);
+
+  // Generator.
+  PythiaParallel pythia;
+  pythia.readString(&quot;Parallelism:numThreads = &quot; + to_string(ip.get&lt;int&gt;(&quot;t&quot;)));
+
+  // Read command file.
+  if (cmndFile != &quot;&quot;) pythia.readFile(cmndFile);
+
+  // Read command-line arguments as Pythia settings.
+  vector&lt;string&gt; args = ip.getArguments();
+  for (string&amp; s : args) pythia.readString(s);
+
+  // Plugin libraries to load.
+  string libLHEF   = &quot;libpythia8lhefHooks.so&quot;;
+  string libHepMC  = &quot;libpythia8hepmc3.so&quot;;
+  string libRivet  = &quot;libpythia8rivet.so&quot;;
+  string libPowheg = &quot;libpythia8powhegHooks.so&quot;;
+  string libMatch  = &quot;libpythia8jetMatchingHooks.so&quot;;
+
+  // Override settings specified on the command line.
+  int            verbose  = ip.get&lt;int&gt;(&quot;V&quot;);
+  int            seed     = ip.get&lt;int&gt;(&quot;s&quot;);
+  int            nEvents  = ip.get&lt;int&gt;(&quot;n&quot;);
+  string         lhefIn   = ip.get&lt;string&gt;(&quot;f&quot;);
+  string         lhefOut  = ip.get&lt;string&gt;(&quot;L&quot;);
+  string         rivetOut = ip.get&lt;string&gt;(&quot;R&quot;);
+  string         rivetAna = ip.get&lt;string&gt;(&quot;A&quot;);
+  string         hepmcOut = ip.get&lt;string&gt;(&quot;H&quot;);
+  vector&lt;string&gt; plugins  = ip.getVector&lt;string&gt;(&quot;P&quot;);
+  bool useHDF5 = false;
+  if (verbose &gt; -1)
+    pythia.settings.mode(&quot;Print:verbosity&quot;, verbose);
+  if (seed &gt; -1) {
+    pythia.readString(&quot;Random:setSeed = on&quot;);
+    pythia.settings.mode(&quot;Random:seed&quot;, seed);
+  }
+  if (nEvents &gt; -1)
+    pythia.settings.mode(&quot;Main:numberOfEvents&quot;, nEvents);
+  if (lhefIn != &quot;&quot;) {
+    if (trimString(splitString(lhefIn, &quot;.&quot;).back()) == &quot;hdf5&quot;) {
+      pythia.readString(&quot;Beams:frameType = 5&quot;);
+      useHDF5 = true;
+    } else pythia.readString(&quot;Beams:frameType = 4&quot;);
+    pythia.readString(&quot;Beams:LHEF = &quot; + lhefIn);
+  }
+  if (lhefOut != &quot;&quot; &amp;&amp; load(pythia, libLHEF)) {
+    pythia.readString(&quot;Init:plugins += {&quot; + libLHEF + &quot;::LHEFHooks}&quot;);
+    pythia.readString(&quot;LHEF:fileName = &quot; + lhefOut);
+  }
+  if (hepmcOut != &quot;&quot; &amp;&amp; load(pythia, libHepMC)) {
+    pythia.readString(&quot;Init:plugins += {&quot; + libHepMC + &quot;::HepMC3Hooks}&quot;);
+    pythia.readString(&quot;HepMC:fileName = &quot; + hepmcOut);
+  }
+  if ((rivetOut != &quot;&quot; || rivetAna != &quot;&quot;) &amp;&amp; load(pythia, libRivet)) {
+    pythia.readString(&quot;Init:plugins += {&quot; + libRivet + &quot;::RivetHooks}&quot;);
+    if (rivetOut != &quot;&quot;) pythia.readString(&quot;Rivet:fileName = &quot; + rivetOut);
+    if (rivetAna != &quot;&quot;) pythia.readString(&quot;Rivet:analyses = &quot; + rivetAna);
+  }
+  if (plugins.size() &gt; 0) {
+    for (string&amp; p : plugins)
+      pythia.readString(&quot;Init:plugins += {&quot; + p + &quot;}&quot;);
+  }
+
+  // Optionally load HDF5 reader (currently not available).
+  if (useHDF5) {
+    pythia.logger.abortMsg(&quot;main()&quot;, &quot;failed to load HDF5 reader&quot;);
+    return 1;
+  }
+
+  // Check if matching should be done.
+  bool doPowhegMatching = pythia.mode(&quot;POWHEG:veto&quot;)
+    || pythia.mode(&quot;POWHEG:MPIveto&quot;);
+  bool doJetMatching    = pythia.flag(&quot;JetMatching:merge&quot;);
+
+  // Optionally load UserHooks for POWHEG vetos.
+  if (doPowhegMatching &amp;&amp; load(pythia, libPowheg)) {
+    pythia.readString(&quot;Init:plugins += {&quot; + libPowheg + &quot;::PowhegHooks}&quot;);
+    // Set showers to start at the kinematical limit.
+    if (pythia.mode(&quot;POWHEG:veto&quot;) &gt; 0) {
+      if (pythia.mode(&quot;PartonShowers:model&quot;) == 2) {
+        pythia.readString(&quot;Vincia:tune = 0&quot;);
+        pythia.readString(&quot;Vincia:pTmaxMatch = 2&quot;);
+      } else {
+        pythia.readString(&quot;SpaceShower:pTmaxMatch = 2&quot;);
+        pythia.readString(&quot;TimeShower:pTmaxMatch = 2&quot;);
+      }
+    }
+    // Set MPI to start at the kinematical limit.
+    if (pythia.mode(&quot;POWHEG:MPIveto&quot;) &gt; 0)
+      pythia.readString(&quot;MultipartonInteractions:pTmaxMatch = 2&quot;);
+  }
+
+  // Optionally load UserHooks for jet matching.
+  if (doJetMatching &amp;&amp; load(pythia, libMatch)) {
+    int  scheme = pythia.mode(&quot;JetMatching:scheme&quot;);
+    if (pythia.word(&quot;Alpgen:file&quot;) != &quot;void&quot;) {
+      cout &lt;&lt; &quot;ALPGEN input not supported in this example.\n&quot;;
+      return 1;
+    } else {
+      if (scheme == 1)
+        pythia.readString(
+          &quot;Init:plugins += {&quot; + libMatch + &quot;::JetMatchingMadgraph}&quot;);
+      else if (scheme == 2)
+        pythia.readString(
+          &quot;Init:plugins += {&quot; + libMatch + &quot;::JetMatchingAlpgen}&quot;);
+    }
+  }
+
+  // Initialise.
+  if (!pythia.init()) {
+    pythia.logger.abortMsg(&quot;main()&quot;, &quot;failed to initialise Pythia&quot;);
+    return 1;
+  }
+
+  // Run.
+  pythia.run([&amp;](Pythia*){});
+
+  // Print cross section and errors.
+  pythia.stat();
+
+  // Done.
+  return 0;
+
+}
+</code></pre></body></html>
