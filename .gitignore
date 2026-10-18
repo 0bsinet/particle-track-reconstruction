@@ -1,0 +1,9 @@
+# External Pythia source tree
+/pythia8313/
+
+# Environments
+venv/
+.venv/
+
+# External downloads
+*.tgz
