@@ -1,1 +1,0 @@
-/usr/bin/c++ CMakeFiles/my_first_generator.dir/my_first_generator.cc.o -o my_first_generator   -L/home/obsinet/particle-tracking-research/toy_model/../pythia/pythia8318/lib  -Wl,-rpath,/home/obsinet/particle-tracking-research/toy_model/../pythia/pythia8318/lib -lpythia8 /usr/lib/x86_64-linux-gnu/libHepMC3.so /usr/lib/x86_64-linux-gnu/libHepMC3search.so 
