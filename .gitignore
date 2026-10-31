@@ -1,13 +1,84 @@
-# External Pythia source tree
-/pythia/pythia8318/
+# ==============================
+# Python
+# ==============================
 
-# Environments
-venv/
+# Virtual environments
 .venv/
+venv/
+env/
 
-# Generated simulation data
-toy_particles.csv
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Jupyter notebooks
+.ipynb_checkpoints/
+
+# ==============================
+# CMake / C++
+# ==============================
+
+# Build directories
+build/
+cmake-build-*/
+
+# CMake generated files
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+
+# Compiled binaries and libraries
+*.o
+*.a
+*.so
+*.so.*
+*.dll
+*.exe
+*.out
+
+# ==============================
+# Simulation output
+# ==============================
+
+# Generated event files
+*.hepmc
+*.hepmc3
 *.root
 
-# External downloads
+# Geant4 output
+*.wrl
+*.gdml.tmp
+
+# Generated plots and temporary data
+*.tmp
+*.log
+
+# ==============================
+# IDE / Editor
+# ==============================
+
+.vscode/
+.idea/
+
+# ==============================
+# OS files
+# ==============================
+
+.DS_Store
+Thumbs.db
+
+# ==============================
+# External frameworks
+# ==============================
+/pythia/
+/geant4/
+/acts/
+
+# ==============================
+# Compressed archives
+# ==============================
 *.tgz
+*.tar.gz
+*.zip
