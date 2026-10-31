@@ -1,11 +1,12 @@
-"""
-*This program is not apart of the simulation and is instead a toy model to test the functionality of Pythia*
+/*
+This program is not apart of the simulation and is instead a toy model to test the functionality of Pythia
 
 Generates 100 proton-proton collision events at 8 TeV
 Stores particle information from each event in toy_particles.csv
-"""
+*/
 
 #include "Pythia8/Pythia.h"
+#include "Pythia8Plugins/HepMC3.h"
 #include <fstream>
 #include <iomanip>
 
@@ -13,6 +14,9 @@ using namespace Pythia8;
 using namespace std;
 
 int main() {
+  // Interface for conversion from Pythia8::Event to HepMC event
+  Pythia8ToHepMC toHepMC("my_first_generator.hepmc");
+
   Pythia pythia;
 
   // Configure the collision
@@ -22,13 +26,7 @@ int main() {
 
   if (!pythia.init()) {
     return 1;
-  }
-
-  // Create a CSV file for the generated particles
-  ofstream csv("toy_particles.csv");
-
-  csv << "event,particle_index,pdg_id,charge,"
-      << "px,py,pz,energy,pt,eta,phi\n";
+  } 
 
   int successfulEvents = 0;
   int savedParticles = 0;
@@ -49,30 +47,17 @@ int main() {
         continue;
       }
 
-      csv << iEvent << ","
-          << i << ","
-          << particle.id() << "," // PDG particle code
-          << particle.charge() << ","
-          << setprecision(8)
-          << particle.px() << ","
-          << particle.py() << ","
-          << particle.pz() << ","
-          << particle.e() << ","
-          << particle.pT() << ","
-          << particle.eta() << ","
-          << particle.phi() << "\n"; 
-      
       ++savedParticles;
     }
+    // Constuct new empty HepMC event, fill it and write it out
+    toHepMC.writeNextEvent( pythia );
   } 
-
-  csv.close();
+  
 
   pythia.stat();
 
   cout << "\nSuccessful events: " << successfulEvents << "\n";
   cout << "Saved charged particles: " << savedParticles << "\n";
-  cout << "Output file: toy_particles.csv\n";
 
   return 0;
 }
