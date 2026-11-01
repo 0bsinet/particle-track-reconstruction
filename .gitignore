@@ -38,6 +38,9 @@ Makefile
 *.exe
 *.out
 
+# Generated executables
+/toy_model/my_first_generator
+
 # ==============================
 # Simulation output
 # ==============================
