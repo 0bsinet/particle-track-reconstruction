@@ -2,7 +2,7 @@
 
 ## Overview
 
-This project explores particle tracking and track reconstruction in high-energy particle physics. The goal is to investigate how tracking algorithms perform under challenging conditions, such as increasing event complexity and detector measurement uncertainty. This project also aims to mimic certain properties of the environemnts at the CERN experiments like ATLAS and CMS.
+This project explores particle tracking and track reconstruction in high-energy particle physics. The goal is to investigate how tracking algorithms perform under challenging conditions, such as increasing event complexity and detector measurement uncertainty. This project aims to mimic the environment of the ATLAS experiment with particular regard to its upgrades for the HL-LHC.
 
 ## Research Question
 
