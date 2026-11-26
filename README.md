@@ -2,14 +2,9 @@
 
 ## Overview
 
-<<<<<<< HEAD
-This project explores particle tracking and track reconstruction in high-energy particle physics. The goal is to investigate how tracking algorithms perform under challenging conditions, such as increasing event complexity and detector measurement uncertainty. This project aims to mimic the environment of the ATLAS experiment with particular regard to its upgrades for the HL-LHC.
-=======
-This project studies particle tracking and reconstruction in high-energy
-physics. It uses simulated proton-proton collisions to explore how increasing
-event complexity and detector effects influence track reconstruction, with a
-long-term interest in conditions similar to those at ATLAS and CMS.
->>>>>>> b7ffca9 (Document and configure particle simulation)
+This project studies how pileup and detector effects influence particle
+tracking and reconstruction. The long-term goal is to explore conditions
+relevant to the High-Luminosity Large Hadron Collider (HL-LHC).
 
 ## Research question
 
@@ -19,16 +14,6 @@ are affected first?
 
 This question is preliminary and may change as the project develops.
 
-<<<<<<< HEAD
-## Structure
- - C++ — simulation and algorithm implementation
- - PYTHIA — particle collisione event generation
- - Geant4 — planned detector simulation
- - ACTS — planned track reconstruction framework
- - Python — reconstruction efficiency analysis
- - Git & Github — version control and project documentation
- - WSL/Ubuntu — development environment
-=======
 ## Current status
 
 - A standalone C++ simulation generates top-pair events and minimum-bias pileup
@@ -130,4 +115,3 @@ volume. Fatras then reports `No start volume could be resolved` for those
 particles. The treatment of long-lived particles and displaced decays is still
 under investigation; current simulation output should be interpreted with
 that limitation in mind.
->>>>>>> b7ffca9 (Document and configure particle simulation)
