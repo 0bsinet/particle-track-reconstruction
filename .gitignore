@@ -49,6 +49,10 @@ Makefile
 *.hepmc
 *.hepmc3
 *.root
+hllhc_cpp_output/
+
+# Generated toy-model data
+/toy_model/toy_particles.csv
 
 # Geant4 output
 *.wrl
@@ -78,6 +82,9 @@ Thumbs.db
 pythia8318/
 /geant4/
 /acts/
+
+# External dependencies and generated builds
+/opt/
 
 # ==============================
 # Compressed archives

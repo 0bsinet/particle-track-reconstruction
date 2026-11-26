@@ -9,13 +9,16 @@
  *   - Detector     : OpenDataDetector (DD4hep XML + ROOT material map) in a 2 T Bz field
  *
  * Sequencer Whiteboard Flow:
- *   [Reader]    EventGenerator    --> "mc_truth_particles"
- *   [Algorithm] FatrasSimulation  --> "sim_particles_initial", "sim_particles_final", "sim_hits"
- *   [Writer]    CsvParticleWriter <-- "sim_particles_initial" (writes ./hllhc_cpp_output/particles.csv)
+ *   [Reader]    EventGenerator       --> "hepmc3_event"
+ *   [Algorithm] HepMC3InputConverter --> "mc_truth_particles", "mc_truth_vertices"
+ *   [Algorithm] FatrasSimulation     --> "sim_particles", "sim_hits"
+ *   [Writer]    CsvParticleWriter   <-- "sim_particles" (writes one CSV file per event
+ *                                         under ./hllhc_cpp_output/)
  *
  * Runtime Prerequisites:
- *   export ODD_DIR=/path/to/acts/thirdparty/OpenDataDetector
- *   export LD_LIBRARY_PATH=/path/to/acts/install/lib:$LD_LIBRARY_PATH
+ *   source /path/to/project/pythia/build/acts/this_acts_withdeps.sh
+ *   export ODD_DIR="$ODD_PATH"
+ *   export PYTHIA8DATA="$PWD/pythia/pythia8318/share/Pythia8/xmldoc"
  */
 
 #include <iostream>
@@ -37,17 +40,18 @@
 
 // Generators
 #include "ActsExamples/Generators/EventGenerator.hpp"
-#include "ActsExamples/Generators/MultiplicityGenerators.hpp"
+#include "ActsExamples/Utilities/MultiplicityGenerators.hpp"
 #include "ActsExamples/Generators/Pythia8ProcessGenerator.hpp"
-#include "ActsExamples/Generators/VertexGenerators.hpp"
+#include "ActsExamples/Utilities/VertexGenerators.hpp"
 
 // OpenDataDetector / DD4hep & Material
 #include "ActsExamples/DD4hepDetector/DD4hepDetector.hpp"
-#include "ActsExamples/Io/Root/RootMaterialDecorator.hpp"
+#include "ActsPlugins/Root/RootMaterialDecorator.hpp"
 
 // Fatras Simulation & CSV Output
 #include "ActsExamples/Fatras/FatrasSimulation.hpp"
 #include "ActsExamples/Io/Csv/CsvParticleWriter.hpp"
+#include "ActsExamples/Io/HepMC3/HepMC3InputConverter.hpp"
 
 
 int main() {
@@ -65,7 +69,7 @@ int main() {
   auto randomNumbers = std::make_shared<ActsExamples::RandomNumbers>(rndCfg);
 
   // Configure Pythia8 for the Hard Process 
-  ActsExamples::Pythia8ProcessGenerator::Config hardProcessConfig;
+  ActsExamples::Pythia8Generator::Config hardProcessConfig;
   hardProcessConfig.pdgBeam0 = Acts::PdgParticle::eProton;
   hardProcessConfig.pdgBeam1 = Acts::PdgParticle::eProton;
   hardProcessConfig.cmsEnergy = 14000.0 * GeV;
@@ -77,7 +81,7 @@ int main() {
   };
 
   // Configure Pythia8 for Pile-up
-  ActsExamples::Pythia8ProcessGenerator::Config pileupConfig;
+  ActsExamples::Pythia8Generator::Config pileupConfig;
   pileupConfig.pdgBeam0 = Acts::PdgParticle::eProton;
   pileupConfig.pdgBeam1 = Acts::PdgParticle::eProton;
   pileupConfig.cmsEnergy = 14000.0 * GeV;
@@ -86,47 +90,57 @@ int main() {
   };
 
   // Configure the Gaussian Luminous Region Vertex Smearing
-  ActsExamples::GaussianVertexGenerator::Config vertexConfig;
+  ActsExamples::GaussianPrimaryVertexPositionGenerator vertexConfig;
   vertexConfig.stddev = {12.5 * um, 12.5 * um, 50.0 * mm, 0.0 * ns};
 
   // Combine Hard Process and Pile-Up into an Event Generator
   ActsExamples::EventGenerator::Config evGenConfig;
-  evGenConfig.outputParticles = "mc_truth_particles";
+  evGenConfig.outputEvent = "hepmc3_event";
   evGenConfig.randomNumbers = randomNumbers;
 
   // Add Hard Process component (exactly 1 per event)
   evGenConfig.generators.push_back({
     std::make_shared<ActsExamples::FixedMultiplicityGenerator>(1),
-    std::make_shared<ActsExamples::GaussianVertexGenerator>(vertexConfig),
-    std::make_shared<ActsExamples::Pythia8Generator>(hardProcessConfig, Acts::Logging:INFO)
+    std::make_shared<ActsExamples::GaussianPrimaryVertexPositionGenerator>(vertexConfig),
+    std::make_shared<ActsExamples::Pythia8Generator>(hardProcessConfig, Acts::Logging::INFO)
   });
 
   // Add Pile-up component (Poisson distribution center at mu = 200)
   evGenConfig.generators.push_back({
     std::make_shared<ActsExamples::PoissonMultiplicityGenerator>(200.0),
-    std::make_shared<ActsExamples::GaussianVertexGenerator>(vertexConfig),
-    std::make_shared<ActsExamples::Pythia8ProcessGenerator>(pileupConfig, Acts::Logging::INFO)
+    std::make_shared<ActsExamples::GaussianPrimaryVertexPositionGenerator>(vertexConfig),
+    std::make_shared<ActsExamples::Pythia8Generator>(pileupConfig, Acts::Logging::INFO)
   });
 
-  sequencer.addReader(std::make_shared<ActsExamples::EventGenerator>(evGenConfig, Acts::Logging::INFO));
+  sequencer.addReader(
+    std::make_shared<ActsExamples::EventGenerator>
+      (evGenConfig, Acts::Logging::INFO));
+
+  ActsExamples::HepMC3InputConverter::Config converterConfig;
+  converterConfig.inputEvent = "hepmc3_event";
+  converterConfig.outputParticles = "mc_truth_particles";
+  converterConfig.outputVertices = "mc_truth_vertices";
+
+  sequencer.addAlgorithm(
+    std::make_shared<ActsExamples::HepMC3InputConverter>(converterConfig));
 
   // Initialize OpenDataDetector Geometry natively via DD4hepDetector
   const char* oddDirEnv = std::getenv("ODD_DIR");
   std::string oddDir = 
     oddDirEnv ? oddDirEnv: "./OpenDataDetector";
 
-  ActsExamples::RootMaterialDecorator::Config matCfg;
+  ActsPlugins::RootMaterialDecorator::Config matCfg;
   matCfg.fileName = oddDir + "/data/odd-material-maps.root";
-  auto materialDecorator = std::make_shared<ActsExamples::RootMaterialDecorator>(matCfg, Acts::Logging::INFO);
+  auto materialDecorator = std::make_shared<ActsPlugins::RootMaterialDecorator>(matCfg, Acts::Logging::INFO);
 
-  ActsExamples::DD4hep::DD4hepDetector::Config dd4hepCfg;
+  ActsExamples::DD4hepDetector::Config dd4hepCfg;
   dd4hepCfg.logLevel = Acts::Logging::INFO;
   dd4hepCfg.dd4hepLogLevel = Acts::Logging::WARNING;
   dd4hepCfg.xmlFileNames = {oddDir + "/xml/OpenDataDetector.xml"};
   dd4hepCfg.materialDecorator = materialDecorator;
 
   // Keep 'detector' alive for the entire sequencer.run() call
-  auto detector = std::make_shared<ActsExamples::DD4hep::DD4hepDetector>(dd4hepCfg);
+  auto detector = std::make_shared<ActsExamples::DD4hepDetector>(dd4hepCfg);
   std::shared_ptr<const Acts::TrackingGeometry> trackingGeometry = detector->trackingGeometry();
 
   // Define magnetic field and tracking simulation (Fatras)
@@ -134,20 +148,19 @@ int main() {
 
   ActsExamples::FatrasSimulation::Config simConfig;
   simConfig.inputParticles = "mc_truth_particles";
-  simConfig.outputParticlesInitial = "sim_particles_initial";
-  simConfig.outputParticlesFinal = "sim_particles_final";
+  simConfig.outputParticles = "sim_particles";
   simConfig.outputSimHits = "sim_hits";
   simConfig.trackingGeometry = trackingGeometry;
   simConfig.magneticField = bField;
   simConfig.randomNumbers = randomNumbers;
 
-  sequencer.addAlgorithm(std::make_shared<ActsExamples::FatrasSimulation>(simConfig, Acts::Logging::INFO));
+  sequencer.addAlgorithm(std::make_shared<ActsExamples::FatrasSimulation>(simConfig));
 
-  // Write the simlated hits to CSV
+  // Write the simulated particles to one CSV file per event
   ActsExamples::CsvParticleWriter::Config writerConfig;
-  writerConfig.inputParticles = "sim_particles_initial";
+  writerConfig.inputParticles = "sim_particles";
   writerConfig.outputDir = "./hllhc_cpp_output";
-  writerConfig.filename = "particles.csv";
+  writerConfig.outputStem = "particles";
 
   sequencer.addWriter(std::make_shared<ActsExamples::CsvParticleWriter>(writerConfig, Acts::Logging::INFO));
 

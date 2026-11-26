@@ -1,0 +1,19 @@
+{
+  "name": "Particle Tracking Research",
+  "build": {
+    "dockerfile": "dockerFile",
+    "context": ".."
+  },
+  "workspaceFolder": "/workspaces/particle-tracking-research",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode.cpptools",
+        "ms-vscode.cmake-tools",
+        "ms-python.python",
+        "openai.chatgpt"
+      ]
+    }
+  },
+  "remoteUser": "ubuntu"
+}
